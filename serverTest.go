@@ -74,14 +74,43 @@ func changeBodyHandler(w http.ResponseWriter, r *http.Request) {
 	p.save()
 }
 
+//func goodListenerHandler(w http.ResponseWriter, r *http.Request) {
+//
+//r.ParseForm()
+//log.Println(r.Form)
+//decoder := json.NewDecoder(r.Body)
+//err := decoder.Decode(&t)
+//if err != nil {
+////panic(err)
+//}
+//defer r.Body.Close()
+//}
+
+type Objects struct {
+	Fruits []string
+}
+
+func fruitsHandler(w http.ResponseWriter, r *http.Request) {
+	f := Objects{[]string{"Lemon", "Peach", "Jordgubbe", "Knoblauch"}}
+	jsonFruits, err := json.Marshal(f)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(jsonFruits)
+}
+
 func main() {
 	//HTTP router example
 	http.HandleFunc("/view/", viewHandler)
 	http.HandleFunc("/edit/", editHandler)
 	http.HandleFunc("/save/", saveHandler)
 	http.HandleFunc("/changeBody/", changeBodyHandler)
+	//http.HandleFunc("/goodListener/", goodListenerHandler)
+	http.HandleFunc("/fruits/", fruitsHandler)
 	http.ListenAndServe(":8080", nil)
-	log.Println("Hello")
 }
 
 func checkErr(err error) {
