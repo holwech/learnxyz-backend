@@ -1,15 +1,73 @@
 package models
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
+	"os"
+	"time"
 )
 
+// Topic
 type Topic struct {
-	Name       string
-	RelatedUrl []string
+	Id            int       `json:"id"`
+	Topic         string    `json:"topic"`
+	Discipline    string    `json:"discipline"`
+	SubDiscipline string    `json:"sub-discipline"`
+	Field         string    `json:"field"`
+	Description   string    `json:"description"`
+	Date          time.Time `json:"install_date"`
 }
 
+// Loads the json data from topics.json and loads it into the
+// postgres topics table.
+func DeleteAllAndPopulateWithTopics() {
+	//Deletes all rows in topics table
+	_, err := Db.Exec("DELETE FROM topics")
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
+	}
+
+	file, err := ioutil.ReadFile("./topics.json")
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
+	}
+	var data []Topic
+	json.Unmarshal(file, &data)
+	fmt.Println("- - - - - - - - - -")
+	fmt.Println("DB:Topics have been populated with the following topics")
+	for _, element := range data {
+		fmt.Println(": " + element.Topic)
+		InsertTopic(element)
+	}
+}
+
+func InsertTopic(topic Topic) {
+	stmt, err := Db.Prepare(`
+		INSERT INTO topics (
+			topic, discipline, sub_discipline, field, description, install_date
+		) VALUES (
+			$1, $2, $3, $4, $5, $6
+		)
+	`,
+	)
+	if err != nil {
+		log.Panic(err)
+	}
+	stmt.Exec(
+		topic.Topic,
+		topic.Discipline,
+		topic.SubDiscipline,
+		topic.Field,
+		topic.Description,
+		time.Now(),
+	)
+}
+
+/*
 func PrintTopics() {
 	rows, err := Db.Query("SELECT * FROM topics")
 	if err != nil {
@@ -25,21 +83,9 @@ func PrintTopics() {
 		printRow(tp)
 	}
 
-	//bks := make([]*Book, 0)
-	//for rows.Next() {
-	//bk := new(Book)
-	//err := rows.Scan(&bk.Isbn, &bk.Title, &bk.Author, &bk.Price)
-	//if err != nil {
-	//return nil, err
-	//}
-	//bks = append(bks, bk)
-	//}
-	//if err = rows.Err(); err != nil {
-	//return nil, err
-	//}
-	//return bks, nil
 }
 
 func printRow(tp Topic) {
-	fmt.Println("Name: ", tp.Name, ", RelatedUrl: ", tp.RelatedUrl)
+	fmt.Println("Topic: ", tp.Topic, ", RelatedUrl: ", tp.RelatedUrl)
 }
+*/

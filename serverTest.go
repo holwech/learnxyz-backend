@@ -3,13 +3,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/holwech/learnxyz-backend/models"
 	_ "github.com/lib/pq"
 	"html/template"
 	"io/ioutil"
-	"learnxyz-backend/models"
 	"log"
 	"net/http"
-	"time"
 )
 
 type Page struct {
@@ -28,6 +27,7 @@ func (p *Page) save() error {
 
 func loadPage(title string) (*Page, error) {
 	filename := title + ".txt"
+	fmt.Println("Loading page " + filename)
 	body, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return nil, err
@@ -113,20 +113,6 @@ type User struct {
 	Created    string
 }
 
-type Topic struct {
-	Name       string
-	RelatedUrl []string
-}
-
-func getTopicHandler(w http.ResponseWriter, r *http.Request) {
-	topicName := r.URL.Path[len("/gettopic/"):]
-	rows, err := models.Db.Query("SELECT * FROM topics WHERE name=$1", topicName)
-	checkErr(err)
-	responseTopic := Topic{}
-
-	rows.Next()
-	rows.Scan(&responseTopic.Name, &responseTopic.RelatedUrl)
-}
 func getUserHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Body == nil {
 		http.Error(w, "Please send a request body", 400)
@@ -160,6 +146,7 @@ func getUserHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Write(responseUJson)
 }
+
 func addUserHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Body == nil {
 		http.Error(w, "Please send a request body", 400)
@@ -168,76 +155,46 @@ func addUserHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-const (
-	DB_USER     = "postgres"
-	DB_PASSWORD = "postgres"
-	DB_NAME     = "myDatabaseName"
-)
+func topicsHandler(w http.ResponseWriter, r *http.Request) {
+	rows, err := models.Db.Query("SELECT * FROM topics")
+	checkErr(err)
+	topics := []models.Topic{}
+	for rows.Next() {
+		var topic models.Topic
+		err = rows.Scan(
+			&topic.Id,
+			&topic.Topic,
+			&topic.Discipline,
+			&topic.SubDiscipline,
+			&topic.Field,
+			&topic.Description,
+			&topic.Date,
+		)
+		topics = append(topics, topic)
+		checkErr(err)
+	}
+	responseUJson, _ := json.Marshal(topics)
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Write(responseUJson)
+}
 
 func main() {
-
-	dbinfo := fmt.Sprintf("user=%s password=%s dbname=%s sslmode=disable",
-		DB_USER, DB_PASSWORD, DB_NAME)
-	models.InitDB(dbinfo)
-
-	fmt.Println("# Inserting values")
-
-	models.Db.QueryRow("CREATE TABLE IF NOT EXISTS topics(name text NOT NULL,related_url text[])")
-	var lastInsertId int
-	models.Db.QueryRow("INSERT INTO topics(name, related_url) VALUES($1,$2);", "linear algebra", "{\"url1\", \"url2\", \"url3\"}")
-	//err := row.Scan()
-	//checkErr(err)
-	fmt.Println("last inserted id =", lastInsertId)
-
-	fmt.Println("# Updating")
-	stmt, err := models.Db.Prepare("update userinfo set username=$1 where uid=$2")
-	checkErr(err)
-
-	res, err := stmt.Exec("astaxieupdate", lastInsertId)
-	checkErr(err)
-
-	affect, err := res.RowsAffected()
-	checkErr(err)
-
-	fmt.Println(affect, "rows changed")
-
-	fmt.Println("# Querying")
-	rows, err := models.Db.Query("SELECT * FROM userinfo")
-	checkErr(err)
-
-	for rows.Next() {
-		var uid int
-		var username string
-		var department string
-		var created time.Time
-		err = rows.Scan(&uid, &username, &department, &created)
-		checkErr(err)
-		fmt.Println("uid | username | department | created ")
-		fmt.Printf("%3v | %8v | %6v | %6v\n", uid, username, department, created)
-	}
-
-	fmt.Println("# Deleting")
-	stmt, err = models.Db.Prepare("delete from userinfo where uid=$1")
-	checkErr(err)
-
-	res, err = stmt.Exec(lastInsertId)
-	checkErr(err)
-
-	affect, err = res.RowsAffected()
-	checkErr(err)
-
-	fmt.Println(affect, "rows changed")
-	models.PrintTopics()
+	models.InitDB()
+	models.DeleteAllAndPopulateWithTopics()
+	//models.PrintTopics()
 	//HTTP router example
 	http.HandleFunc("/view/", viewHandler)
-	http.HandleFunc("/edit/", editHandler)
-	http.HandleFunc("/save/", saveHandler)
-	http.HandleFunc("/changeBody/", changeBodyHandler)
+	http.HandleFunc("/topics/", topicsHandler)
+	//http.HandleFunc("/edit/", editHandler)
+	//http.HandleFunc("/save/", saveHandler)
+	//http.HandleFunc("/changeBody/", changeBodyHandler)
 	//http.HandleFunc("/goodListener/", goodListenerHandler)
-	http.HandleFunc("/fruits/", fruitsHandler)
-	http.HandleFunc("/getUser/", getUserHandler)
-	http.HandleFunc("/gettopic/", getTopicHandler)
-	http.ListenAndServe(":8080", nil)
+	//http.HandleFunc("/fruits/", fruitsHandler)
+	//http.HandleFunc("/getUser/", getUserHandler)
+	//http.HandleFunc("/gettopic/", getTopicHandler)
+	fmt.Println("Serving at http://localhost:8091/topics/")
+	http.ListenAndServe(":8091", nil)
 }
 
 func checkErr(err error) {
