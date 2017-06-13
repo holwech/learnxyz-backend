@@ -42,37 +42,7 @@ func InitDB() {
 	}
 
 	fmt.Println("Set up success!")
-	// Init topics table if not exists
-	stmt, err := Db.Prepare(`
-		CREATE TABLE IF NOT EXISTS topics (
-			id serial PRIMARY KEY,
-			topic varchar(50) NOT NULL,
-			discipline varchar(50) NOT NULL,
-			sub_discipline varchar(50),
-			field varchar(50),
-			description varchar(250),
-			install_date date
-		)
-	`)
-	if err != nil {
-		log.Panic(err)
-	}
-	stmt.Exec()
-	var topic string
-	err = Db.QueryRow("SELECT topic FROM topics WHERE topic = 'Non-Linear Algebra'").Scan(&topic)
-	if err == sql.ErrNoRows {
-		fmt.Println("Populating table with one inquiry")
-		stmt, err = Db.Prepare(`
-			INSERT INTO topics (
-				topic, discipline, sub_discipline, field, install_date
-			) VALUES (
-				'Non-Linear Algebra', 'Mathematics', 'Algebra', 'Non-Linear Algebra', '2014-04-20'
-			)
-		`)
-		if err != nil {
-			log.Panic(err)
-		}
-		stmt.Exec()
-	}
+	initTopicsDb()
+	initResourceDb()
 	fmt.Println("DB ready!")
 }

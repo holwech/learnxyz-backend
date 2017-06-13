@@ -253,14 +253,96 @@ func searchTopics(w http.ResponseWriter, r *http.Request) {
 	w.Write(responseUJson)
 }
 
+func getResources(w http.ResponseWriter, r *http.Request) {
+	simulateDelay(2)
+	fmt.Println("URL accessed: ", r.URL)
+	fmt.Println("Queries are: ", r.URL.Query())
+
+	queries := r.URL.Query()
+
+	// Sets the search key
+	topicIdArr := queries["id"]
+	topicId := strings.Join(topicIdArr, "")
+	// Number of results returned
+	limit := 20
+	sLimit, ok := queries["limit"]
+	if ok {
+		limit, err := strconv.ParseInt(strings.Join(sLimit, ""), 10, 0)
+		checkErr(err)
+		if limit > 100 {
+			limit = 100
+		}
+	}
+
+	rows, err := models.Db.Query(`
+			SELECT * FROM resources
+			WHERE ANY(related_topic_ids) = $1
+			LIMIT $2
+		`, topicId, limit)
+	checkErr(err)
+	resources := []models.Resource{}
+	for rows.Next() {
+		var resource models.Resource
+		err = rows.Scan(
+			&resource.Id,
+			&resource.Title,
+			&resource.Url,
+			&resource.RelatedTopicId,
+			&resource.Date,
+		)
+		resources = append(resources, resource)
+		checkErr(err)
+	}
+	responseUJson, _ := json.Marshal(resources)
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Write(responseUJson)
+}
+
+func addResource(w http.ResponseWriter, r *http.Request) {
+	simulateDelay(2)
+	fmt.Println("URL accessed: ", r.URL)
+	fmt.Println("Queries are: ", r.URL.Query())
+	queries := r.URL.Query()
+	stmt, err := models.Db.Prepare(`
+		INSERT INTO resources (
+			title, url, description, relatedTopicIds, install_date
+		) VALUES (
+			$1, $2, $3, $4, $5
+		)
+	`,
+	)
+	if err != nil {
+		log.Panic(err)
+	}
+	_, err = stmt.Exec(
+		strings.Join(queries["title"], ""),
+		strings.Join(queries["url"], ""),
+		strings.Join(queries["description"], ""),
+		strings.Join(queries["relatedTopicId"], ""),
+		time.Now(),
+	)
+	checkErr(err)
+	status := Status{"Success", "Resource inserted"}
+	if err != nil {
+		status = Status{"Failed", "Insertion failed"}
+	}
+	responseUJson, _ := json.Marshal(status)
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Write(responseUJson)
+}
+
 func main() {
 	models.InitDB()
 	models.DeleteAllAndPopulateWithTopics()
 	//models.PrintTopics()
 	//HTTP router example
 	http.HandleFunc("/view/", viewHandler)
-	http.HandleFunc("/topics/search", searchTopics)
 	http.HandleFunc("/topics/add", addTopic)
+	http.HandleFunc("/topics/search", searchTopics)
+	http.HandleFunc("/resources/add", addResource)
+	http.HandleFunc("/resources/get", getResources)
 	//http.HandleFunc("/edit/", editHandler)
 	//http.HandleFunc("/save/", saveHandler)
 	//http.HandleFunc("/changeBody/", changeBodyHandler)

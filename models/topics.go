@@ -20,6 +20,25 @@ type Topic struct {
 	Date          time.Time `json:"install_date"`
 }
 
+func initTopicsDb() {
+	// Init topics table if not exists
+	stmt, err := Db.Prepare(`
+		CREATE TABLE IF NOT EXISTS topics (
+			id serial PRIMARY KEY,
+			topic text NOT NULL,
+			discipline text NOT NULL,
+			sub_discipline text,
+			field text,
+			description text,
+			install_date date
+		)
+	`)
+	if err != nil {
+		log.Panic(err)
+	}
+	stmt.Exec()
+}
+
 // Loads the json data from topics.json and loads it into the
 // postgres topics table.
 func DeleteAllAndPopulateWithTopics() {
