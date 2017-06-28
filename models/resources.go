@@ -11,7 +11,9 @@ type Resource struct {
 	Title          string    `json:"title"`
 	Url            string    `json:"url"`
 	Description    string    `json:"description"`
-	RelatedTopicId []string  `json:"relatedTopicId"`
+	Type           string    `json"type"`
+	Tags           []string  `json:"tags"`
+	RelatedTopicId []int64   `json:"relatedTopicId"`
 	Date           time.Time `json:"install_date"`
 }
 
@@ -23,7 +25,9 @@ func initResourceDb() {
 			title text NOT NULL,
 			url text NOT NULL,
 			description text,
-			related_topic_ids text[] NOT NULL,
+			type text NOT NULL,
+			tags text[],
+			related_topic_ids integer[] NOT NULL,
 			install_date date
 		)
 	`)
@@ -36,9 +40,9 @@ func initResourceDb() {
 func InsertResource(resource Resource) {
 	stmt, err := Db.Prepare(`
 		INSERT INTO resources (
-			title, url, description, relatedTopicIds, install_date
+			title, url, description, type, tags, related_topic_ids, install_date
 		) VALUES (
-			$1, $2, $3, $4, $5
+			$1, $2, $3, $4, $5, $6, $7
 		)
 	`,
 	)

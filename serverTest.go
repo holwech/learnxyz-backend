@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/holwech/learnxyz-backend/models"
-	_ "github.com/lib/pq"
+	"github.com/lib/pq"
 	"html/template"
 	"io/ioutil"
 	"log"
@@ -276,7 +276,7 @@ func getResources(w http.ResponseWriter, r *http.Request) {
 
 	rows, err := models.Db.Query(`
 			SELECT * FROM resources
-			WHERE ANY(related_topic_ids) = $1
+			WHERE $1 = ANY (related_topic_ids)
 			LIMIT $2
 		`, topicId, limit)
 	checkErr(err)
@@ -287,7 +287,8 @@ func getResources(w http.ResponseWriter, r *http.Request) {
 			&resource.Id,
 			&resource.Title,
 			&resource.Url,
-			&resource.RelatedTopicId,
+			&resource.Description,
+			pq.Array(&resource.RelatedTopicId),
 			&resource.Date,
 		)
 		resources = append(resources, resource)
@@ -306,20 +307,26 @@ func addResource(w http.ResponseWriter, r *http.Request) {
 	queries := r.URL.Query()
 	stmt, err := models.Db.Prepare(`
 		INSERT INTO resources (
-			title, url, description, relatedTopicIds, install_date
+			title, url, description, type, tags, related_topic_ids, install_date
 		) VALUES (
-			$1, $2, $3, $4, $5
+			$1, $2, $3, $4, $5, $6, $7
 		)
 	`,
 	)
 	if err != nil {
 		log.Panic(err)
 	}
+	relatedTopicId, _ := strconv.ParseInt(strings.Join(queries["relatedTopicId"], ""), 10, 64)
+	relatedTopicIdArr := [1]int64{relatedTopicId}
+	tags := []string{strings.Join(queries["tags"], "")}
+	fmt.Println("Related topic id is: ", relatedTopicId)
 	_, err = stmt.Exec(
 		strings.Join(queries["title"], ""),
 		strings.Join(queries["url"], ""),
 		strings.Join(queries["description"], ""),
-		strings.Join(queries["relatedTopicId"], ""),
+		strings.Join(queries["type"], ""),
+		pq.Array(strings.Join(queries["tags"], "")),
+		pq.Array(relatedTopicIdArr),
 		time.Now(),
 	)
 	checkErr(err)
@@ -335,7 +342,6 @@ func addResource(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	models.InitDB()
-	models.DeleteAllAndPopulateWithTopics()
 	//models.PrintTopics()
 	//HTTP router example
 	http.HandleFunc("/view/", viewHandler)
