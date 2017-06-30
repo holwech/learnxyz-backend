@@ -14,10 +14,10 @@ type Topic struct {
 	Id            int       `json:"id"`
 	Topic         string    `json:"topic"`
 	Discipline    string    `json:"discipline"`
-	SubDiscipline string    `json:"sub-discipline"`
+	SubDiscipline string    `json:"subDiscipline"`
 	Field         string    `json:"field"`
 	Description   string    `json:"description"`
-	Date          time.Time `json:"install_date"`
+	Date          time.Time `json:"date"`
 }
 
 func initTopicsDb() {
