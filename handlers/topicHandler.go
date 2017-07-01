@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/holwech/learnxyz-backend/models"
 	"log"
 	"net/http"
@@ -38,9 +37,7 @@ func simulateDelay(delay int) {
 // TODO: Fix case sensitivity
 // TODO: Ensure to filter out unserious entries/weird characters etc
 func AddTopic(w http.ResponseWriter, r *http.Request) {
-	simulateDelay(2)
-	fmt.Println("URL accessed: ", r.URL)
-	fmt.Println("Queries are: ", r.URL.Query())
+	simulateDelay(1)
 	queries := r.URL.Query()
 	stmt, err := models.Db.Prepare(`
 		INSERT INTO topics (
@@ -73,10 +70,56 @@ func AddTopic(w http.ResponseWriter, r *http.Request) {
 }
 
 // TODO: Fix case sensitivity
+func GetTopics(w http.ResponseWriter, r *http.Request) {
+	simulateDelay(1)
+
+	queries := r.URL.Query()
+
+	// Sets the search key
+	search := strings.Join(queries["search"], "")
+	subDiscipline := strings.Join(queries["subDiscipline"], "")
+	// Number of results returned
+	limit := 20
+	sLimit, ok := queries["limit"]
+	if ok {
+		limit, err := strconv.ParseInt(strings.Join(sLimit, ""), 10, 0)
+		checkErr(err)
+		if limit > 100 {
+			limit = 100
+		}
+	}
+
+	rows, err := models.Db.Query(`
+		SELECT * FROM topics
+		WHERE (length($1) = 0 OR topic LIKE '%' || $1 || '%')
+		AND (length($2) = 0 OR sub_discipline = $2)
+		LIMIT $3`,
+		search, subDiscipline, limit)
+	checkErr(err)
+	topics := []models.Topic{}
+	for rows.Next() {
+		var topic models.Topic
+		err = rows.Scan(
+			&topic.Id,
+			&topic.Topic,
+			&topic.Discipline,
+			&topic.SubDiscipline,
+			&topic.Field,
+			&topic.Description,
+			&topic.Date,
+		)
+		topics = append(topics, topic)
+		checkErr(err)
+	}
+	responseUJson, _ := json.Marshal(topics)
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Write(responseUJson)
+}
+
+// TODO: Fix case sensitivity
 func SearchTopics(w http.ResponseWriter, r *http.Request) {
-	simulateDelay(2)
-	fmt.Println("URL accessed: ", r.URL)
-	fmt.Println("Queries are: ", r.URL.Query())
+	simulateDelay(1)
 
 	queries := r.URL.Query()
 

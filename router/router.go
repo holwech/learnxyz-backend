@@ -47,6 +47,12 @@ var routes = Routes{
 		handlers.SearchTopics,
 	},
 	Route{
+		"getTopics",
+		"GET",
+		"/topics/get",
+		handlers.GetTopics,
+	},
+	Route{
 		"addResource",
 		"POST",
 		"/resources/add",

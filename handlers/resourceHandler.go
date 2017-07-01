@@ -20,15 +20,15 @@ func checkErr(err error) {
 }
 
 func GetResources(w http.ResponseWriter, r *http.Request) {
-	simulateDelay(2)
-	fmt.Println("URL accessed: ", r.URL)
-	fmt.Println("Queries are: ", r.URL.Query())
+	simulateDelay(1)
 
 	queries := r.URL.Query()
 
 	// Sets the search key
-	topicIdArr := queries["topicId"]
-	topicId := strings.Join(topicIdArr, "")
+	topicId := strings.Join(queries["topicId"], "")
+	label := strings.Join(queries["type"], "")
+	fmt.Println("label is", label)
+
 	// Number of results returned
 	limit := 20
 	sLimit, ok := queries["limit"]
@@ -43,8 +43,9 @@ func GetResources(w http.ResponseWriter, r *http.Request) {
 	rows, err := models.Db.Query(`
 			SELECT * FROM resources
 			WHERE $1 = ANY (related_topic_ids)
-			LIMIT $2
-		`, topicId, limit)
+			AND type = $2
+			LIMIT $3
+		`, topicId, label, limit)
 	checkErr(err)
 	resources := []models.Resource{}
 	for rows.Next() {
@@ -69,9 +70,7 @@ func GetResources(w http.ResponseWriter, r *http.Request) {
 }
 
 func AddResource(w http.ResponseWriter, r *http.Request) {
-	simulateDelay(2)
-	fmt.Println("URL accessed: ", r.URL)
-	fmt.Println("Queries are: ", r.URL.Query())
+	simulateDelay(1)
 	queries := r.URL.Query()
 	stmt, err := models.Db.Prepare(`
 		INSERT INTO resources (
