@@ -64,4 +64,10 @@ var routes = Routes{
 		"/resources/get",
 		handlers.GetResources,
 	},
+	Route{
+		"createUser",
+		"POST",
+		"/user/create",
+		handlers.CreateUser,
+	},
 }

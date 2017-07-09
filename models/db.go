@@ -42,5 +42,6 @@ func InitDB(dbUser string, dbPassword string, dbName string) {
 	fmt.Println("Set up success!")
 	initTopicsDb()
 	initResourceDb()
+	initUsersDb()
 	fmt.Println("DB ready!")
 }
