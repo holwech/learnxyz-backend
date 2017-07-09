@@ -1,13 +1,22 @@
 package models
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/lib/pq"
 	"io/ioutil"
 	"log"
 	"os"
 	"time"
 )
+
+func checkErr(err error) {
+	if err != nil {
+		log.Println(err.Error())
+		panic(err)
+	}
+}
 
 // Topic
 type Topic struct {
@@ -84,6 +93,44 @@ func InsertTopic(topic Topic) {
 		topic.Description,
 		time.Now(),
 	)
+}
+
+func GetTopics(search string, subDisciplineFilter []string, limit int) []Topic {
+	var rows *sql.Rows
+	var err error
+	if len(subDisciplineFilter) > 0 {
+		arr := pq.StringArray(subDisciplineFilter)
+		rows, err = Db.Query(`
+			SELECT * FROM topics
+			WHERE (length($1) = 0 OR topic LIKE '%' || $1 || '%')
+			AND sub_discipline = ANY($2::text[])
+			LIMIT $3`,
+			search, arr, limit)
+		checkErr(err)
+	} else {
+		rows, err = Db.Query(`
+			SELECT * FROM topics
+			WHERE (length($1) = 0 OR topic LIKE '%' || $1 || '%')
+			LIMIT $2`,
+			search, limit)
+		checkErr(err)
+	}
+	topics := []Topic{}
+	for rows.Next() {
+		var topic Topic
+		err = rows.Scan(
+			&topic.Id,
+			&topic.Topic,
+			&topic.Discipline,
+			&topic.SubDiscipline,
+			&topic.Field,
+			&topic.Description,
+			&topic.Date,
+		)
+		topics = append(topics, topic)
+		checkErr(err)
+	}
+	return topics
 }
 
 /*

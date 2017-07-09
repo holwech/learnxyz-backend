@@ -1,12 +1,10 @@
 package models
 
 import (
-	"bufio"
 	"database/sql"
 	"fmt"
 	_ "github.com/lib/pq"
 	"log"
-	"os"
 )
 
 var Db *sql.DB
@@ -19,15 +17,15 @@ var Db *sql.DB
 // Do NOT login as the user called postgres.
 // If the database does NOT ask for password when you run psql, your
 // settings are wrong and unsecure.
-func InitDB() {
-	fmt.Println("Setting up DB")
-	reader := bufio.NewReader(os.Stdin)
-	fmt.Print("Enter username: ")
-	dbUser, _ := reader.ReadString('\n')
-	fmt.Print("Enter password: ")
-	dbPassword, _ := reader.ReadString('\n')
-	fmt.Print("Enter DB name: ")
-	dbName, _ := reader.ReadString('\n')
+func InitDB(dbUser string, dbPassword string, dbName string) {
+	//	fmt.Println("Setting up DB")
+	//	reader := bufio.NewReader(os.Stdin)
+	//	fmt.Print("Enter username: ")
+	//	dbUser, _ := reader.ReadString('\n')
+	//	fmt.Print("Enter password: ")
+	//	dbPassword, _ := reader.ReadString('\n')
+	//	fmt.Print("Enter DB name: ")
+	//dbName, _ := reader.ReadString('\n')
 	dbinfo := fmt.Sprintf("user=%s password=%s dbname=%s sslmode=disable",
 		dbUser, dbPassword, dbName)
 

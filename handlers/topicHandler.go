@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/holwech/learnxyz-backend/models"
 	"log"
 	"net/http"
@@ -74,12 +75,13 @@ func GetTopics(w http.ResponseWriter, r *http.Request) {
 	simulateDelay(1)
 
 	queries := r.URL.Query()
+	fmt.Println(queries)
 
 	// Sets the search key
 	search := strings.Join(queries["search"], "")
-	subDiscipline := strings.Join(queries["subDiscipline"], "")
+
 	// Number of results returned
-	limit := 20
+	limit := 9
 	sLimit, ok := queries["limit"]
 	if ok {
 		limit, err := strconv.ParseInt(strings.Join(sLimit, ""), 10, 0)
@@ -88,29 +90,7 @@ func GetTopics(w http.ResponseWriter, r *http.Request) {
 			limit = 100
 		}
 	}
-
-	rows, err := models.Db.Query(`
-		SELECT * FROM topics
-		WHERE (length($1) = 0 OR topic LIKE '%' || $1 || '%')
-		AND (length($2) = 0 OR sub_discipline = $2)
-		LIMIT $3`,
-		search, subDiscipline, limit)
-	checkErr(err)
-	topics := []models.Topic{}
-	for rows.Next() {
-		var topic models.Topic
-		err = rows.Scan(
-			&topic.Id,
-			&topic.Topic,
-			&topic.Discipline,
-			&topic.SubDiscipline,
-			&topic.Field,
-			&topic.Description,
-			&topic.Date,
-		)
-		topics = append(topics, topic)
-		checkErr(err)
-	}
+	topics := models.GetTopics(search, queries["subDisciplineFilter[]"], limit)
 	responseUJson, _ := json.Marshal(topics)
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
