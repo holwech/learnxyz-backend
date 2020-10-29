@@ -1,26 +1,37 @@
-# Compiled Object files, Static and Dynamic libs (Shared Objects)
-*.o
-*.a
-*.so
+*.swp
+*.*~
+project.lock.json
+.DS_Store
+*.pyc
+nupkg/
 
-# Folders
-_obj
-_test
+# Visual Studio Code
+.vscode
 
-# Architecture specific extensions/prefixes
-*.[568vq]
-[568vq].out
+# Rider
+.idea
 
-*.cgo1.go
-*.cgo2.c
-_cgo_defun.c
-_cgo_gotypes.go
-_cgo_export.*
+# User-specific files
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
 
-_testmain.go
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+build/
+bld/
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+msbuild.log
+msbuild.err
+msbuild.wrn
 
-*.exe
-*.test
-*.prof
-
-cred
+# Visual Studio 2015
+.vs/
